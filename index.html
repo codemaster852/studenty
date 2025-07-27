@@ -634,22 +634,51 @@
         const isPaidCheckbox = document.getElementById('content-is-paid-admin');
         const priceInput = document.getElementById('content-price-admin');
 
+        // UPDATED ADMIN LOGIN LOGIC
         adminLoginBtn.addEventListener('click', async () => {
             const email = document.getElementById('admin-email').value;
             const pass = document.getElementById('admin-password').value;
             
-            // This is still not secure, but for demonstration:
-            if (email !== 'Mostafaalatawy3@gmail.com' || pass !== '123456789#Osama') {
-                 alert('Incorrect admin credentials.');
-                 return;
-            }
-
-            // More secure check: verify against the database
-            if (userProfile && userProfile.is_admin) {
+            // This simplified check for demonstration purposes relies only on the hardcoded credentials.
+            if (email === 'Mostafaalatawy3@gmail.com' && pass === '123456789#Osama') {
                 adminLoginView.style.display = 'none';
                 adminDashboardView.style.display = 'block';
+                loadAdminData(); 
             } else {
-                alert('You do not have admin privileges.');
+                alert('Incorrect admin credentials.');
+            }
+        });
+
+        const loadAdminData = async () => {
+            const { data: users, error } = await dbStudenty.from('profiles').select('id, full_name, email, is_banned');
+            if (error) {
+                console.error("Error loading users for admin panel:", error);
+                return;
+            }
+            const userListEl = document.getElementById('user-list');
+            userListEl.innerHTML = '';
+            users.forEach(user => {
+                const userDiv = document.createElement('div');
+                userDiv.className = 'flex justify-between items-center p-2 bg-gray-600 rounded mb-1';
+                userDiv.innerHTML = `<div class="truncate pr-2"><p class="font-semibold">${user.full_name || 'No Name'}</p><p class="text-xs text-gray-400">${user.email}</p></div><button data-userid="${user.id}" data-banned="${user.is_banned}" class="ban-user-btn ${user.is_banned ? 'bg-green-500' : 'bg-red-500'} text-white px-2 py-1 rounded text-sm flex-shrink-0">${user.is_banned ? 'Unban' : 'Ban'}</button>`;
+                userListEl.appendChild(userDiv);
+            });
+        };
+
+        document.getElementById('user-list').addEventListener('click', async (e) => {
+            if (e.target.classList.contains('ban-user-btn')) {
+                const button = e.target;
+                const userId = button.dataset.userid;
+                const isBanned = button.dataset.banned === 'true';
+                
+                const { error } = await dbStudenty.from('profiles').update({ is_banned: !isBanned }).eq('id', userId);
+                
+                if(error) {
+                    alert('Failed to update user status: ' + error.message);
+                } else {
+                    alert('User status updated successfully.');
+                    loadAdminData();
+                }
             }
         });
 
