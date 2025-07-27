@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MRC Studnety - Your Ultimate Study Platform</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5;
+        }
+        .glassmorphism {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .modal {
+            display: none; /* Hidden by default */
+            position: fixed; /* Stay in place */
+            z-index: 100; /* Sit on top */
+            left: 0;
+            top: 0;
+            width: 100%; /* Full width */
+            height: 100%; /* Full height */
+            overflow: auto; /* Enable scroll if needed */
+            background-color: rgb(0,0,0); /* Fallback color */
+            background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 10% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 500px;
+            border-radius: 10px;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white">
+
+    <!-- Main Application -->
+    <div id="app" class="min-h-screen flex flex-col">
+        <!-- Header -->
+        <header class="bg-gray-800 shadow-md p-4 flex justify-between items-center">
+            <h1 class="text-2xl font-bold text-cyan-400">MRC Studnety</h1>
+            <div id="user-auth-links">
+                <button id="login-btn" class="bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-2 px-4 rounded">Login</button>
+                <button id="signup-btn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded ml-2">Sign Up</button>
+            </div>
+            <div id="user-info" class="hidden items-center">
+                 <span id="user-email" class="mr-4"></span>
+                 <button id="logout-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded">Logout</button>
+                 <button id="admin-panel-btn" class="bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded ml-2 hidden">Admin Panel</button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main id="main-content" class="flex-grow p-4 md:p-8 grid grid-cols-1 lg:grid-cols-12 gap-8 hidden">
+            <!-- Left Sidebar -->
+            <aside class="lg:col-span-3 bg-gray-800 p-6 rounded-lg shadow-lg">
+                <h2 class="text-xl font-semibold mb-4 border-b border-gray-700 pb-2">Dashboard</h2>
+                <nav id="main-nav" class="space-y-2">
+                    <button data-target="pomodoro" class="w-full text-left p-3 rounded-md bg-gray-700 hover:bg-cyan-500 transition-colors flex items-center"><i class="fas fa-clock mr-3"></i>Pomodoro</button>
+                    <button data-target="todo" class="w-full text-left p-3 rounded-md hover:bg-cyan-500 transition-colors flex items-center"><i class="fas fa-list-check mr-3"></i>To-Do List</button>
+                    <button data-target="ai-tutor" class="w-full text-left p-3 rounded-md hover:bg-cyan-500 transition-colors flex items-center"><i class="fas fa-robot mr-3"></i>AI Tutor</button>
+                    <button data-target="plan-generator" class="w-full text-left p-3 rounded-md hover:bg-cyan-500 transition-colors flex items-center"><i class="fas fa-calendar-alt mr-3"></i>Plan Generator</button>
+                    <button data-target="timeline" class="w-full text-left p-3 rounded-md hover:bg-cyan-500 transition-colors flex items-center"><i class="fas fa-chart-line mr-3"></i>Timeline</button>
+                    <button data-target="subjects" class="w-full text-left p-3 rounded-md hover:bg-cyan-500 transition-colors flex items-center"><i class="fas fa-book mr-3"></i>Subjects</button>
+                    <button data-target="payment" class="w-full text-left p-3 rounded-md hover:bg-cyan-500 transition-colors flex items-center"><i class="fas fa-credit-card mr-3"></i>Payment</button>
+                </nav>
+            </aside>
+
+            <!-- Main View -->
+            <div id="main-view" class="lg:col-span-9 bg-gray-800 p-6 rounded-lg shadow-lg">
+                <!-- Pomodoro Timer -->
+                <div id="pomodoro" class="tab-content active">
+                    <h2 class="text-3xl font-bold mb-4 text-cyan-400">Pomodoro Timer</h2>
+                    <div class="bg-gray-700 p-8 rounded-full w-64 h-64 mx-auto flex flex-col justify-center items-center shadow-2xl">
+                        <div id="pomodoro-timer" class="text-6xl font-mono">25:00</div>
+                        <div id="pomodoro-status" class="text-lg text-gray-400 mt-2">Time to Focus!</div>
+                    </div>
+                    <div class="flex justify-center mt-6 space-x-4">
+                        <button id="pomodoro-start" class="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg text-lg">Start</button>
+                        <button id="pomodoro-pause" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-3 px-6 rounded-lg text-lg">Pause</button>
+                        <button id="pomodoro-reset" class="bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-6 rounded-lg text-lg">Reset</button>
+                    </div>
+                </div>
+                <!-- To-Do List -->
+                <div id="todo" class="tab-content">
+                     <h2 class="text-3xl font-bold mb-4 text-cyan-400">To-Do List</h2>
+                     <div class="flex mb-4">
+                         <input type="text" id="todo-input" class="flex-grow bg-gray-700 border-2 border-gray-600 rounded-l-lg p-3 focus:outline-none focus:border-cyan-500" placeholder="Add a new task...">
+                         <button id="add-todo-btn" class="bg-cyan-500 hover:bg-cyan-600 text-white font-bold p-3 rounded-r-lg">Add</button>
+                     </div>
+                     <ul id="todo-list" class="space-y-2">
+                         <!-- Tasks will be dynamically added here -->
+                     </ul>
+                </div>
+                <!-- AI Tutor -->
+                <div id="ai-tutor" class="tab-content">
+                    <h2 class="text-3xl font-bold mb-4 text-cyan-400">AI Tutor</h2>
+                    <div id="ai-chat-window" class="h-96 bg-gray-900 rounded-lg p-4 overflow-y-auto mb-4 border border-gray-700">
+                        <!-- Chat messages will appear here -->
+                    </div>
+                    <div class="flex">
+                        <input type="text" id="ai-tutor-input" class="flex-grow bg-gray-700 border-2 border-gray-600 rounded-l-lg p-3 focus:outline-none focus:border-cyan-500" placeholder="Ask your question...">
+                        <button id="ai-tutor-send" class="bg-cyan-500 hover:bg-cyan-600 text-white font-bold p-3 rounded-r-lg">Send</button>
+                    </div>
+                </div>
+                <!-- Other tabs would go here -->
+                <div id="plan-generator" class="tab-content"><h2 class="text-3xl font-bold mb-4 text-cyan-400">Study Plan Generator</h2><p>Coming soon...</p></div>
+                <div id="timeline" class="tab-content"><h2 class="text-3xl font-bold mb-4 text-cyan-400">Your Timeline</h2><p>Coming soon...</p></div>
+                <div id="subjects" class="tab-content"><h2 class="text-3xl font-bold mb-4 text-cyan-400">Subjects, Books & Resources</h2><div id="resources-container"></div></div>
+                <div id="payment" class="tab-content">
+                    <h2 class="text-3xl font-bold mb-4 text-cyan-400">MRC Bank Payment</h2>
+                    <div class="max-w-md mx-auto">
+                        <div class="bg-gray-700 p-6 rounded-lg">
+                            <h3 class="text-xl font-semibold mb-4">Save Card Details</h3>
+                            <input id="card-number" class="w-full bg-gray-800 p-2 rounded mb-3" placeholder="Card Number">
+                            <input id="card-expiry" class="w-full bg-gray-800 p-2 rounded mb-3" placeholder="MM/YY">
+                            <input id="card-cvc" class="w-full bg-gray-800 p-2 rounded mb-3" placeholder="CVC">
+                            <button id="save-card-btn" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">Save Card</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+        
+        <!-- Welcome Screen -->
+        <div id="welcome-screen" class="flex-grow flex items-center justify-center">
+            <div class="text-center">
+                <h1 class="text-5xl font-extrabold mb-4">Welcome to <span class="text-cyan-400">MRC Studnety</span></h1>
+                <p class="text-xl text-gray-300">Your all-in-one platform for focused and effective learning.</p>
+                <p class="text-lg text-gray-400 mt-2">Please log in or sign up to continue.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Login/Signup Modal -->
+    <div id="auth-modal" class="modal">
+        <div class="modal-content bg-gray-800 text-white rounded-lg shadow-xl">
+            <div class="flex justify-end">
+                <button id="close-modal" class="text-gray-400 hover:text-white">&times;</button>
+            </div>
+            <div id="auth-container">
+                <!-- Auth forms will be injected here -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- Admin Panel Modal -->
+    <div id="admin-modal" class="modal">
+        <div class="modal-content bg-gray-800 text-white rounded-lg shadow-xl w-full max-w-4xl">
+             <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold text-cyan-400">Admin Panel</h2>
+                <button id="close-admin-modal" class="text-gray-400 hover:text-white text-2xl">&times;</button>
+            </div>
+            <div id="admin-login-view">
+                <h3 class="text-xl mb-4">Admin Login</h3>
+                <input type="email" id="admin-email" placeholder="Email" class="w-full p-2 rounded bg-gray-700 border border-gray-600 mb-2">
+                <input type="password" id="admin-password" placeholder="Password" class="w-full p-2 rounded bg-gray-700 border border-gray-600 mb-4">
+                <button id="admin-login-btn" class="w-full bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-2 px-4 rounded">Login</button>
+            </div>
+            <div id="admin-dashboard-view" class="hidden">
+                <!-- Admin Dashboard content -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- User Management -->
+                    <div class="bg-gray-700 p-4 rounded-lg">
+                        <h4 class="text-lg font-semibold mb-3">User Management</h4>
+                        <div id="user-list" class="max-h-64 overflow-y-auto"></div>
+                    </div>
+                    <!-- Content Management -->
+                    <div class="bg-gray-700 p-4 rounded-lg">
+                        <h4 class="text-lg font-semibold mb-3">Content Management</h4>
+                        <input id="content-title" placeholder="Title" class="w-full p-2 rounded bg-gray-600 mb-2">
+                        <textarea id="content-description" placeholder="Description/URL" class="w-full p-2 rounded bg-gray-600 mb-2"></textarea>
+                        <select id="content-type" class="w-full p-2 rounded bg-gray-600 mb-2">
+                            <option value="books">Book</option>
+                            <option value="resources">Resource</option>
+                            <option value="courses">Course</option>
+                            <option value="lessons">Lesson</option>
+                        </select>
+                        <button id="add-content-btn" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded">Add Content</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script type="module">
+        // --- SUPABASE & API CONFIG ---
+        const SUPABASE_URL_STUDENTY = 'https://cupgajsbmmstqvxdfcjn.supabase.co';
+        const SUPABASE_ANON_KEY_STUDENTY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1cGdhanNibW1zdHF2eGRmY2puIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM2MDEzMzAsImV4cCI6MjA2OTE3NzMzMH0.fjEnLnGnR9pZ3Mm1ThUA92U7Lbg804z9WB1smm9sWsQ';
+        const SUPABASE_URL_BANK = 'https://effpdesipfziszvborof.supabase.co';
+        const SUPABASE_ANON_KEY_BANK = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVmZnBkZXNpcGZ6aXN6dmJvcm9mIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM0NTQzOTgsImV4cCI6MjA2OTAzMDM5OH0.JIgvjeBI_N_TpJRWc1ptKpr4CoXbAfT8huvNfRA1nqY';
+        const DEEPSEEK_API_KEY = 'sk-29b3177b528c49b4b1bbc70dd54d744f'; // Use with caution on client-side
+        const GEMINI_API_KEY = 'AIzaSyBhjtiqzJMOtw5k7EO9TA1SCj7tARcpKFI'; // Use with caution on client-side
+
+        const { createClient } = supabase;
+        const dbStudenty = createClient(SUPABASE_URL_STUDENTY, SUPABASE_ANON_KEY_STUDENTY);
+        const dbBank = createClient(SUPABASE_URL_BANK, SUPABASE_ANON_KEY_BANK);
+
+        let currentUser = null;
+
+        // --- DOM ELEMENTS ---
+        const mainContent = document.getElementById('main-content');
+        const welcomeScreen = document.getElementById('welcome-screen');
+        const userAuthLinks = document.getElementById('user-auth-links');
+        const userInfo = document.getElementById('user-info');
+        const userEmailEl = document.getElementById('user-email');
+        const adminPanelBtn = document.getElementById('admin-panel-btn');
+        const authModal = document.getElementById('auth-modal');
+        const adminModal = document.getElementById('admin-modal');
+        const mainNav = document.getElementById('main-nav');
+        const mainView = document.getElementById('main-view');
+
+        // --- AUTHENTICATION ---
+        const showLoginForm = () => {
+            document.getElementById('auth-container').innerHTML = `
+                <h3 class="text-xl mb-4">Login</h3>
+                <input type="email" id="login-email" placeholder="Email" class="w-full p-2 rounded bg-gray-700 border border-gray-600 mb-2">
+                <input type="password" id="login-password" placeholder="Password" class="w-full p-2 rounded bg-gray-700 border border-gray-600 mb-4">
+                <button id="submit-login" class="w-full bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-2 px-4 rounded">Login</button>
+            `;
+            authModal.style.display = 'block';
+            document.getElementById('submit-login').addEventListener('click', handleLogin);
+        };
+        
+        const showSignupForm = () => {
+             document.getElementById('auth-container').innerHTML = `
+                <h3 class="text-xl mb-4">Sign Up</h3>
+                <input type="email" id="signup-email" placeholder="Email" class="w-full p-2 rounded bg-gray-700 border border-gray-600 mb-2">
+                <input type="password" id="signup-password" placeholder="Password" class="w-full p-2 rounded bg-gray-700 border border-gray-600 mb-4">
+                <button id="submit-signup" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded">Sign Up</button>
+            `;
+            authModal.style.display = 'block';
+            document.getElementById('submit-signup').addEventListener('click', handleSignup);
+        };
+
+        const handleLogin = async () => {
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            const { data, error } = await dbStudenty.auth.signInWithPassword({ email, password });
+            if (error) {
+                alert('Login failed: ' + error.message);
+            } else {
+                authModal.style.display = 'none';
+                checkUser();
+            }
+        };
+        
+        const handleSignup = async () => {
+            const email = document.getElementById('signup-email').value;
+            const password = document.getElementById('signup-password').value;
+            const { data, error } = await dbStudenty.auth.signUp({ 
+                email, 
+                password,
+                options: {
+                    data: {
+                        is_admin: false, // Default to not admin
+                    }
+                }
+            });
+            if (error) {
+                alert('Signup failed: ' + error.message);
+            } else {
+                alert('Signup successful! Please check your email to verify.');
+                authModal.style.display = 'none';
+            }
+        };
+
+        const handleLogout = async () => {
+            await dbStudenty.auth.signOut();
+            currentUser = null;
+            updateUIForUser();
+        };
+
+        const checkUser = async () => {
+            const { data: { session } } = await dbStudenty.auth.getSession();
+            currentUser = session?.user || null;
+            updateUIForUser();
+        };
+
+        const updateUIForUser = () => {
+            if (currentUser) {
+                mainContent.style.display = 'grid';
+                welcomeScreen.style.display = 'none';
+                userAuthLinks.style.display = 'none';
+                userInfo.style.display = 'flex';
+                userEmailEl.textContent = currentUser.email;
+                if (currentUser.user_metadata?.is_admin) {
+                   adminPanelBtn.style.display = 'block';
+                }
+                loadTodos();
+                loadResources();
+            } else {
+                mainContent.style.display = 'none';
+                welcomeScreen.style.display = 'flex';
+                userAuthLinks.style.display = 'block';
+                userInfo.style.display = 'none';
+                adminPanelBtn.style.display = 'none';
+            }
+        };
+
+        // --- NAVIGATION ---
+        mainNav.addEventListener('click', (e) => {
+            if (e.target.tagName === 'BUTTON') {
+                const targetId = e.target.dataset.target;
+                
+                // Update button styles
+                mainNav.querySelectorAll('button').forEach(btn => btn.classList.remove('bg-cyan-500'));
+                e.target.classList.add('bg-cyan-500');
+
+                // Show target content
+                mainView.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+                document.getElementById(targetId).classList.add('active');
+            }
+        });
+
+        // --- POMODORO TIMER ---
+        let timerInterval;
+        let timeLeft = 25 * 60;
+        let isPaused = true;
+
+        const pomodoroTimerEl = document.getElementById('pomodoro-timer');
+        const pomodoroStatusEl = document.getElementById('pomodoro-status');
+
+        const updateTimerDisplay = () => {
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            pomodoroTimerEl.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        };
+
+        const startTimer = () => {
+            if (isPaused) {
+                isPaused = false;
+                timerInterval = setInterval(() => {
+                    timeLeft--;
+                    updateTimerDisplay();
+                    if (timeLeft <= 0) {
+                        clearInterval(timerInterval);
+                        pomodoroStatusEl.textContent = "Break Time!";
+                        // Add logic for break timer
+                    }
+                }, 1000);
+            }
+        };
+
+        const pauseTimer = () => {
+            isPaused = true;
+            clearInterval(timerInterval);
+        };
+
+        const resetTimer = () => {
+            isPaused = true;
+            clearInterval(timerInterval);
+            timeLeft = 25 * 60;
+            updateTimerDisplay();
+            pomodoroStatusEl.textContent = "Time to Focus!";
+        };
+
+        document.getElementById('pomodoro-start').addEventListener('click', startTimer);
+        document.getElementById('pomodoro-pause').addEventListener('click', pauseTimer);
+        document.getElementById('pomodoro-reset').addEventListener('click', resetTimer);
+
+        // --- TO-DO LIST ---
+        const todoInput = document.getElementById('todo-input');
+        const addTodoBtn = document.getElementById('add-todo-btn');
+        const todoListEl = document.getElementById('todo-list');
+
+        const loadTodos = async () => {
+            if (!currentUser) return;
+            const { data: todos, error } = await dbStudenty
+                .from('todos')
+                .select('*')
+                .eq('user_id', currentUser.id)
+                .order('created_at', { ascending: false });
+            
+            if (error) {
+                console.error('Error loading todos:', error);
+                return;
+            }
+
+            todoListEl.innerHTML = '';
+            todos.forEach(todo => renderTodo(todo));
+        };
+
+        const renderTodo = (todo) => {
+            const li = document.createElement('li');
+            li.className = `bg-gray-700 p-3 rounded-lg flex justify-between items-center transition-all ${todo.is_completed ? 'line-through text-gray-500' : ''}`;
+            li.dataset.id = todo.id;
+            li.innerHTML = `
+                <span>${todo.task}</span>
+                <div>
+                    <button class="toggle-todo text-green-400 hover:text-green-300 mr-2"><i class="fas fa-check"></i></button>
+                    <button class="delete-todo text-red-400 hover:text-red-300"><i class="fas fa-trash"></i></button>
+                </div>
+            `;
+            todoListEl.appendChild(li);
+        };
+
+        addTodoBtn.addEventListener('click', async () => {
+            const task = todoInput.value.trim();
+            if (task && currentUser) {
+                const { data, error } = await dbStudenty
+                    .from('todos')
+                    .insert([{ task: task, user_id: currentUser.id }])
+                    .select();
+                
+                if (error) {
+                    console.error('Error adding todo:', error);
+                } else if (data) {
+                    renderTodo(data[0]);
+                    todoInput.value = '';
+                }
+            }
+        });
+
+        todoListEl.addEventListener('click', async (e) => {
+            const target = e.target.closest('button');
+            if (!target) return;
+
+            const li = target.closest('li');
+            const id = li.dataset.id;
+
+            if (target.classList.contains('delete-todo')) {
+                const { error } = await dbStudenty.from('todos').delete().eq('id', id);
+                if (!error) {
+                    li.remove();
+                } else {
+                    console.error('Error deleting todo:', error);
+                }
+            } else if (target.classList.contains('toggle-todo')) {
+                const isCompleted = li.classList.contains('line-through');
+                const { error } = await dbStudenty.from('todos').update({ is_completed: !isCompleted }).eq('id', id);
+                if (!error) {
+                    li.classList.toggle('line-through');
+                    li.classList.toggle('text-gray-500');
+                } else {
+                    console.error('Error updating todo:', error);
+                }
+            }
+        });
+
+        // --- AI TUTOR ---
+        const aiTutorInput = document.getElementById('ai-tutor-input');
+        const aiTutorSendBtn = document.getElementById('ai-tutor-send');
+        const aiChatWindow = document.getElementById('ai-chat-window');
+
+        const addMessageToChat = (message, sender) => {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `p-2 my-1 rounded-lg ${sender === 'user' ? 'bg-cyan-600 ml-auto' : 'bg-gray-600 mr-auto'}`;
+            msgDiv.textContent = message;
+            aiChatWindow.appendChild(msgDiv);
+            aiChatWindow.scrollTop = aiChatWindow.scrollHeight;
+        };
+
+        aiTutorSendBtn.addEventListener('click', async () => {
+            const query = aiTutorInput.value.trim();
+            if (!query) return;
+
+            addMessageToChat(query, 'user');
+            aiTutorInput.value = '';
+            addMessageToChat('Thinking...', 'tutor');
+
+            // NOTE: Calling AI APIs directly from the client is insecure.
+            // This is for demonstration. In a real app, this should be a server-side call.
+            try {
+                // Using Gemini as an example
+                const prompt = `You are a helpful study tutor. Answer the following student question: ${query}`;
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`;
+                
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API call failed with status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                const aiResponse = result.candidates[0].content.parts[0].text;
+                
+                // Remove the "Thinking..." message and add the real one
+                aiChatWindow.removeChild(aiChatWindow.lastChild);
+                addMessageToChat(aiResponse, 'tutor');
+
+            } catch (error) {
+                console.error("AI Tutor Error:", error);
+                aiChatWindow.removeChild(aiChatWindow.lastChild);
+                addMessageToChat("Sorry, I couldn't get a response. Please check the API key and configuration.", 'tutor');
+            }
+        });
+        
+        // --- RESOURCES ---
+        const resourcesContainer = document.getElementById('resources-container');
+        
+        const loadResources = async () => {
+            const types = ['courses', 'books', 'resources', 'lessons'];
+            resourcesContainer.innerHTML = ''; // Clear existing
+            
+            for(const type of types) {
+                const { data, error } = await dbStudenty.from(type).select('*');
+                if(!error && data.length > 0) {
+                    const section = document.createElement('div');
+                    section.className = 'mb-6';
+                    const title = type.charAt(0).toUpperCase() + type.slice(1);
+                    let itemsHtml = `<h3 class="text-2xl font-semibold mb-3 text-cyan-300">${title}</h3><div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">`;
+                    data.forEach(item => {
+                        itemsHtml += `
+                            <div class="bg-gray-700 p-4 rounded-lg">
+                                <h4 class="font-bold">${item.title}</h4>
+                                <p class="text-gray-400">${item.description || item.url}</p>
+                            </div>
+                        `;
+                    });
+                    itemsHtml += '</div>';
+                    section.innerHTML = itemsHtml;
+                    resourcesContainer.appendChild(section);
+                }
+            }
+        };
+
+        // --- PAYMENT ---
+        document.getElementById('save-card-btn').addEventListener('click', async () => {
+            if (!currentUser) {
+                alert("You must be logged in to save a card.");
+                return;
+            }
+            alert("This is a demo. Card details are not securely stored or processed.");
+            // In a real app, you would use a secure payment gateway like Stripe.
+            // For this demo, we will not save card details due to security risks.
+            // The following code is a placeholder to demonstrate Supabase interaction.
+            
+            // const cardNumber = document.getElementById('card-number').value;
+            // This is highly insecure and should NOT be done in production.
+            // const { error } = await dbBank.from('profiles').update({ card_details_encrypted: cardNumber }).eq('id', currentUser.id);
+            // if (error) alert("Failed to save card info: " + error.message);
+            // else alert("Card details saved (demonstration only).");
+        });
+
+        // --- ADMIN PANEL ---
+        const adminLoginView = document.getElementById('admin-login-view');
+        const adminDashboardView = document.getElementById('admin-dashboard-view');
+        
+        document.getElementById('admin-login-btn').addEventListener('click', () => {
+            const email = document.getElementById('admin-email').value;
+            const pass = document.getElementById('admin-password').value;
+            if (email === 'Mostafaalatawy3@gmail.com' && pass === '123456789#Osama') {
+                adminLoginView.style.display = 'none';
+                adminDashboardView.style.display = 'block';
+                loadAdminData();
+            } else {
+                alert('Incorrect admin credentials.');
+            }
+        });
+        
+        const loadAdminData = async () => {
+            // Load users
+            const { data: users, error: userError } = await dbStudenty.from('profiles').select('id, email, is_banned');
+            if (userError) {
+                console.error("Error loading users:", userError);
+                return;
+            }
+            const userListEl = document.getElementById('user-list');
+            userListEl.innerHTML = '';
+            users.forEach(user => {
+                const userDiv = document.createElement('div');
+                userDiv.className = 'flex justify-between items-center p-2 bg-gray-600 rounded mb-1';
+                userDiv.innerHTML = `
+                    <span>${user.email}</span>
+                    <button data-userid="${user.id}" data-banned="${user.is_banned}" class="ban-user-btn ${user.is_banned ? 'bg-green-500' : 'bg-red-500'} text-white px-2 py-1 rounded text-sm">
+                        ${user.is_banned ? 'Unban' : 'Ban'}
+                    </button>
+                `;
+                userListEl.appendChild(userDiv);
+            });
+        };
+
+        document.getElementById('user-list').addEventListener('click', async (e) => {
+            if (e.target.classList.contains('ban-user-btn')) {
+                const userId = e.target.dataset.userid;
+                const isBanned = e.target.dataset.banned === 'true';
+                
+                const { error } = await dbStudenty.from('profiles').update({ is_banned: !isBanned }).eq('id', userId);
+                if(error) {
+                    alert('Failed to update user status: ' + error.message);
+                } else {
+                    alert('User status updated successfully.');
+                    loadAdminData(); // Refresh list
+                }
+            }
+        });
+
+        document.getElementById('add-content-btn').addEventListener('click', async () => {
+            const title = document.getElementById('content-title').value;
+            const description = document.getElementById('content-description').value;
+            const type = document.getElementById('content-type').value;
+
+            if (!title || !description || !type) {
+                alert('Please fill all content fields.');
+                return;
+            }
+
+            const { error } = await dbStudenty.from(type).insert([{ title, description }]);
+            if (error) {
+                alert('Failed to add content: ' + error.message);
+            } else {
+                alert('Content added successfully!');
+                document.getElementById('content-title').value = '';
+                document.getElementById('content-description').value = '';
+                loadResources(); // Refresh main view
+            }
+        });
+
+        // --- MODAL CONTROLS ---
+        document.getElementById('login-btn').addEventListener('click', showLoginForm);
+        document.getElementById('signup-btn').addEventListener('click', showSignupForm);
+        document.getElementById('close-modal').addEventListener('click', () => authModal.style.display = 'none');
+        document.getElementById('admin-panel-btn').addEventListener('click', () => adminModal.style.display = 'block');
+        document.getElementById('close-admin-modal').addEventListener('click', () => {
+            adminModal.style.display = 'none';
+            adminLoginView.style.display = 'block';
+            adminDashboardView.style.display = 'none';
+        });
+        window.onclick = function(event) {
+            if (event.target == authModal) authModal.style.display = "none";
+            if (event.target == adminModal) {
+                 adminModal.style.display = "none";
+                 adminLoginView.style.display = 'block';
+                 adminDashboardView.style.display = 'none';
+            }
+        }
+        
+        // --- INITIALIZATION ---
+        document.getElementById('logout-btn').addEventListener('click', handleLogout);
+        checkUser();
+    </script>
+</body>
+</html>
