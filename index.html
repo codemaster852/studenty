@@ -545,14 +545,14 @@
                 return;
             }
             document.getElementById('linked-card-number').textContent = `**** **** **** ${userProfile.linked_card_number.slice(-4)}`;
-            document.getElementById('card-balance').textContent = userProfile.card_is_unlimited ? 'Unlimited' : `$${userProfile.card_balance || 0}`;
+            // UPDATED: Changed currency symbol
+            document.getElementById('card-balance').textContent = userProfile.card_is_unlimited ? 'Unlimited' : `${userProfile.card_balance || 0} MP`;
             document.getElementById('card-display').classList.remove('hidden');
             document.getElementById('card-form').classList.add('hidden');
         };
 
         saveCardBtn.addEventListener('click', async () => {
             const holderName = document.getElementById('card-holder-name').value.trim();
-            // FIX: Remove spaces from card number input
             const cardNumber = document.getElementById('card-number').value.replace(/\s/g, '');
             const cvc = document.getElementById('card-cvc').value.trim();
 
