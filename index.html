@@ -634,13 +634,12 @@
         const isPaidCheckbox = document.getElementById('content-is-paid-admin');
         const priceInput = document.getElementById('content-price-admin');
 
-        // UPDATED ADMIN LOGIN LOGIC
         adminLoginBtn.addEventListener('click', async () => {
             const email = document.getElementById('admin-email').value;
             const pass = document.getElementById('admin-password').value;
             
-            // This simplified check for demonstration purposes relies only on the hardcoded credentials.
             if (email === 'Mostafaalatawy3@gmail.com' && pass === '123456789#Osama') {
+                // This check is now just for the UI. The real security is the RLS policies.
                 adminLoginView.style.display = 'none';
                 adminDashboardView.style.display = 'block';
                 loadAdminData(); 
@@ -649,10 +648,13 @@
             }
         });
 
+        // UPDATED: This function now calls the secure database function
         const loadAdminData = async () => {
-            const { data: users, error } = await dbStudenty.from('profiles').select('id, full_name, email, is_banned');
+            const { data: users, error } = await dbStudenty.rpc('get_all_users');
+            
             if (error) {
                 console.error("Error loading users for admin panel:", error);
+                alert("Could not load user data. Make sure the 'get_all_users' function exists in your database.");
                 return;
             }
             const userListEl = document.getElementById('user-list');
